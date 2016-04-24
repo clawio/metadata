@@ -1,0 +1,19 @@
+{
+	"Server": {
+		"ServerType": "simple",
+		"HTTPPort": 58003,
+		"HTTPAccessLog": "./http-access.log",
+		"Log": "./app.log",
+		"EnablePProf": true,
+		"HealthCheckType": "simple",
+		"HealthCheckPath": "/health.txt"
+	},
+	"General": {
+		"AuthenticationServiceBaseURL": "http://localhost:58001/clawio/v1/auth/"
+	}, 
+	"MetaDataController": {
+		"Type": "simple",
+		"SimpleMetaDataDir": "/tmp/clawio-service-localfs-data",
+		"SimpleTempDir": "/tmp"
+	}
+}
