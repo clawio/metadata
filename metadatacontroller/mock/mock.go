@@ -1,25 +1,29 @@
 package mock
 
 import (
-	"io"
-
 	"github.com/clawio/entities"
 	"github.com/stretchr/testify/mock"
 )
 
-// DataController mocks a DataController.
-type DataController struct {
+// MetaDataController mocks a MetaDataController.
+type MetaDataController struct {
 	mock.Mock
 }
 
-// UploadBLOB mocks the UploadBLOB call.
-func (m *DataController) UploadBLOB(user entities.User, pathSpec string, r io.Reader, clientChecksum string) error {
+// Init mocks the Init call.
+func (m *MetaDataController) Init(user entities.User) error {
 	args := m.Called()
 	return args.Error(0)
 }
 
-// DownloadBLOB mocks the DownloadBLOB call.
-func (m *DataController) DownloadBLOB(user entities.User, pathSpec string) (io.Reader, error) {
+// ExamineObject mocks the ExamineObject call.
+func (m *MetaDataController) ExamineObject(user entities.User, pathSpec string) (entities.ObjectInfo, error) {
 	args := m.Called()
-	return args.Get(0).(io.Reader), args.Error(1)
+	return args.Get(0).(entities.ObjectInfo), args.Error(1)
+}
+
+// ListTree mocks the ListTree call.
+func (m *MetaDataController) ListTree(user entities.User, pathSpec string) ([]entities.ObjectInfo, error) {
+	args := m.Called()
+	return args.Get(0).([]entities.ObjectInfo), args.Error(1)
 }
