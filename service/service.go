@@ -103,6 +103,12 @@ func (s *Service) Endpoints() map[string]map[string]http.HandlerFunc {
 		"/listtree/{path:.*}": {
 			"GET": prometheus.InstrumentHandlerFunc("/listtree", s.authenticateHandlerFunc(s.ListTree)),
 		},
+		"/move/{path:.*}": {
+			"POST": prometheus.InstrumentHandlerFunc("/listtree", s.authenticateHandlerFunc(s.MoveObject)),
+		},
+		"/delete/{path:.*}": {
+			"DELETE": prometheus.InstrumentHandlerFunc("/listtree", s.authenticateHandlerFunc(s.DeleteObject)),
+		},
 	}
 }
 

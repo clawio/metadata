@@ -98,6 +98,30 @@ func (c *controller) ListTree(user entities.User, pathSpec string) ([]entities.O
 	}
 	return oinfos, nil
 }
+
+func (c *controller) DeleteObject(user entities.User, pathSpec string) error {
+	storagePath := c.getStoragePath(user, pathSpec)
+	err := os.RemoveAll(storagePath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *controller) MoveObject(user entities.User, sourcePathSpec, targetPathSpec string) error {
+	sourceStoragePath := c.getStoragePath(user, sourcePathSpec)
+	targetStoragePath := c.getStoragePath(user, targetPathSpec)
+	err := os.Rename(sourceStoragePath, targetStoragePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return codes.NewErr(codes.NotFound, err.Error())
+		} else if _, ok := err.(*os.LinkError); ok {
+			return codes.NewErr(codes.BadInputData, err.Error())
+		}
+		return err
+	}
+	return nil
+}
 func (c *controller) getStoragePath(user entities.User, path string) string {
 	homeDir := secureJoin("/", string(user.GetUsername()[0]), user.GetUsername())
 	userPath := secureJoin(homeDir, path)
