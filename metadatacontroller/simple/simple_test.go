@@ -147,11 +147,11 @@ func (suite *TestSuite) TestMoveTreeObject_overExistingBLOB() {
 }
 
 func (suite *TestSuite) TestMoveTreeObject_overExistingTree() {
-	err := os.MkdirAll(suite.controller.getStoragePath(user, "mytreeovertree"), 0755)
+	err := os.MkdirAll(suite.controller.getStoragePath(user, "testmovetreeobjectmytreeovertree"), 0755)
 	require.Nil(suite.T(), err)
-	err = os.MkdirAll(suite.controller.getStoragePath(user, "otheremptytree"), 0755)
+	err = os.MkdirAll(suite.controller.getStoragePath(user, "testmovetreeobjectotheremptytree"), 0755)
 	require.Nil(suite.T(), err)
-	err = suite.metadataController.MoveObject(user, "mytreeovertree", "otheremptytree")
+	err = suite.metadataController.MoveObject(user, "testmovetreeobjectmytreeovertre", "testmovetreeobjectotheremptytree")
 	require.NotNil(suite.T(), err)
 	// err is the following
 	// &os.LinkError{Op:"rename", Old:"/tmp/t/test/mytreeovertree", New:"/tmp/t/test/otheremptytree", Err:0x42}
