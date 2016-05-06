@@ -17,7 +17,7 @@ import (
 func (s *Service) MoveObject(w http.ResponseWriter, r *http.Request) {
 	sourcePath := mux.Vars(r)["path"]
 	targetPath := r.URL.Query().Get("target")
-	user := context.Get(r, keys.UserKey).(entities.User)
+	user := context.Get(r, keys.UserKey).(*entities.User)
 	err := s.MetaDataController.MoveObject(user, sourcePath, targetPath)
 	if err != nil {
 		s.handleMoveObjectError(err, w)

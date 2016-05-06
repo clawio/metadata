@@ -9,12 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var oinfos = []entities.ObjectInfo{}
+var oinfos = []*entities.ObjectInfo{}
 
 func (suite *TestSuite) TestListTree() {
 	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
 	suite.MockMetaDataController.On("ListTree").Once().Return(oinfos, nil)
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/listtree/mytree", nil)
+	r, err := http.NewRequest("GET", listURL+"mytree", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
@@ -24,7 +25,8 @@ func (suite *TestSuite) TestListTree() {
 func (suite *TestSuite) TestListTree_withNotFoundError() {
 	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
 	suite.MockMetaDataController.On("ListTree").Once().Return(oinfos, codes.NewErr(codes.NotFound, ""))
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/listtree/mytree", nil)
+	r, err := http.NewRequest("GET", listURL+"mytree", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
@@ -33,7 +35,8 @@ func (suite *TestSuite) TestListTree_withNotFoundError() {
 func (suite *TestSuite) TestListTree_withBadInputError() {
 	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
 	suite.MockMetaDataController.On("ListTree").Once().Return(oinfos, codes.NewErr(codes.BadInputData, ""))
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/listtree/mytree", nil)
+	r, err := http.NewRequest("GET", listURL+"mytree", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
@@ -42,7 +45,8 @@ func (suite *TestSuite) TestListTree_withBadInputError() {
 func (suite *TestSuite) TestListTree_withError() {
 	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
 	suite.MockMetaDataController.On("ListTree").Once().Return(oinfos, codes.NewErr(99, ""))
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/listtree/mytree", nil)
+	r, err := http.NewRequest("GET", listURL+"mytree", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)

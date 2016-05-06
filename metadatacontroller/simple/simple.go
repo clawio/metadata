@@ -15,20 +15,6 @@ type controller struct {
 	metaDataDir string
 }
 
-type objectInfo struct {
-	Otype    entities.ObjectType `json:"type"`
-	PathSpec string              `json:"pathspec"`
-	Size     uint64              `json:"size"`
-	Checksum string              `json:"checksum"`
-	MimeType string              `json:"mime"`
-}
-
-func (o *objectInfo) GetType() entities.ObjectType { return o.Otype }
-func (o *objectInfo) GetPathSpec() string          { return o.PathSpec }
-func (o *objectInfo) GetSize() uint64              { return o.Size }
-func (o *objectInfo) GetChecksum() string          { return o.Checksum }
-func (o *objectInfo) GetMimeType() string          { return o.MimeType }
-
 // New returns an implementation of MetaDataController.
 func New(opts *Options) metadatacontroller.MetaDataController {
 	if opts == nil {
@@ -47,7 +33,7 @@ type Options struct {
 	TempDir     string
 }
 
-func (c *controller) Init(user entities.User) error {
+func (c *controller) Init(user *entities.User) error {
 	storagePath := c.getStoragePath(user, "/")
 	if err := os.MkdirAll(storagePath, 0755); err != nil {
 		return err
@@ -55,7 +41,7 @@ func (c *controller) Init(user entities.User) error {
 	return nil
 }
 
-func (c *controller) ExamineObject(user entities.User, pathSpec string) (entities.ObjectInfo, error) {
+func (c *controller) ExamineObject(user *entities.User, pathSpec string) (*entities.ObjectInfo, error) {
 	storagePath := c.getStoragePath(user, pathSpec)
 	finfo, err := os.Stat(storagePath)
 	if err != nil {
@@ -68,7 +54,7 @@ func (c *controller) ExamineObject(user entities.User, pathSpec string) (entitie
 	return oinfo, nil
 }
 
-func (c *controller) ListTree(user entities.User, pathSpec string) ([]entities.ObjectInfo, error) {
+func (c *controller) ListTree(user *entities.User, pathSpec string) ([]*entities.ObjectInfo, error) {
 	storagePath := c.getStoragePath(user, pathSpec)
 	finfo, err := os.Stat(storagePath)
 	if err != nil {
@@ -91,7 +77,7 @@ func (c *controller) ListTree(user entities.User, pathSpec string) ([]entities.O
 	if err != nil {
 		return nil, err
 	}
-	var oinfos []entities.ObjectInfo
+	var oinfos []*entities.ObjectInfo
 	for _, fi := range finfos {
 		p := path.Join(pathSpec, path.Base(fi.Name()))
 		oinfos = append(oinfos, c.getObjectInfo(p, fi))
@@ -99,7 +85,7 @@ func (c *controller) ListTree(user entities.User, pathSpec string) ([]entities.O
 	return oinfos, nil
 }
 
-func (c *controller) DeleteObject(user entities.User, pathSpec string) error {
+func (c *controller) DeleteObject(user *entities.User, pathSpec string) error {
 	storagePath := c.getStoragePath(user, pathSpec)
 	err := os.RemoveAll(storagePath)
 	if err != nil {
@@ -108,7 +94,7 @@ func (c *controller) DeleteObject(user entities.User, pathSpec string) error {
 	return nil
 }
 
-func (c *controller) MoveObject(user entities.User, sourcePathSpec, targetPathSpec string) error {
+func (c *controller) MoveObject(user *entities.User, sourcePathSpec, targetPathSpec string) error {
 	sourceStoragePath := c.getStoragePath(user, sourcePathSpec)
 	targetStoragePath := c.getStoragePath(user, targetPathSpec)
 	err := os.Rename(sourceStoragePath, targetStoragePath)
@@ -122,16 +108,16 @@ func (c *controller) MoveObject(user entities.User, sourcePathSpec, targetPathSp
 	}
 	return nil
 }
-func (c *controller) getStoragePath(user entities.User, path string) string {
-	homeDir := secureJoin("/", string(user.GetUsername()[0]), user.GetUsername())
+func (c *controller) getStoragePath(user *entities.User, path string) string {
+	homeDir := secureJoin("/", string(user.Username[0]), user.Username)
 	userPath := secureJoin(homeDir, path)
 	return secureJoin(c.metaDataDir, userPath)
 }
 
-func (c *controller) getObjectInfo(pathSpec string, finfo os.FileInfo) entities.ObjectInfo {
-	oinfo := &objectInfo{PathSpec: pathSpec, Size: uint64(finfo.Size()), Otype: entities.ObjectTypeBLOB}
+func (c *controller) getObjectInfo(pathSpec string, finfo os.FileInfo) *entities.ObjectInfo {
+	oinfo := &entities.ObjectInfo{PathSpec: pathSpec, Size: finfo.Size(), Type: entities.ObjectTypeBLOB}
 	if finfo.IsDir() {
-		oinfo.Otype = entities.ObjectTypeTree
+		oinfo.Type = entities.ObjectTypeTree
 	}
 	return oinfo
 }

@@ -12,7 +12,7 @@ import (
 
 // Init retrieves the information about an object.
 func (s *Service) Init(w http.ResponseWriter, r *http.Request) {
-	user := context.Get(r, keys.UserKey).(entities.User)
+	user := context.Get(r, keys.UserKey).(*entities.User)
 	err := s.MetaDataController.Init(user)
 	if err != nil {
 		s.handleInitError(err, w)

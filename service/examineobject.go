@@ -16,7 +16,7 @@ import (
 // ExamineObject retrieves the information about an object.
 func (s *Service) ExamineObject(w http.ResponseWriter, r *http.Request) {
 	path := mux.Vars(r)["path"]
-	user := context.Get(r, keys.UserKey).(entities.User)
+	user := context.Get(r, keys.UserKey).(*entities.User)
 	oinfo, err := s.MetaDataController.ExamineObject(user, path)
 	if err != nil {
 		s.handleExamineObjectError(err, w)

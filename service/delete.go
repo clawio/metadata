@@ -14,7 +14,7 @@ import (
 // DeleteObject retrieves the information about an object.
 func (s *Service) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	path := mux.Vars(r)["path"]
-	user := context.Get(r, keys.UserKey).(entities.User)
+	user := context.Get(r, keys.UserKey).(*entities.User)
 	err := s.MetaDataController.DeleteObject(user, path)
 	if err != nil {
 		s.handleDeleteObjectError(err, w)

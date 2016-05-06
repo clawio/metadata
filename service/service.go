@@ -5,11 +5,10 @@ import (
 	"net/http"
 
 	"github.com/NYTimes/gizmo/config"
-	"github.com/clawio/keys"
+	"github.com/clawio/authentication/lib"
 	"github.com/clawio/metadata/metadatacontroller"
 	"github.com/clawio/metadata/metadatacontroller/simple"
 	"github.com/clawio/sdk"
-	"github.com/gorilla/context"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -33,6 +32,8 @@ type (
 	// GeneralConfig contains configuration parameters
 	// for general parts of the service.
 	GeneralConfig struct {
+		BaseURL                      string
+		JWTKey, JWTSigningMethod     string
 		AuthenticationServiceBaseURL string
 	}
 
@@ -77,7 +78,10 @@ func getMetaDataController(cfg *MetaDataControllerConfig) metadatacontroller.Met
 // Prefix returns the string prefix used for all endpoints within
 // this service.
 func (s *Service) Prefix() string {
-	return "/clawio/v1/metadata"
+	if s.Config.General.BaseURL == "" {
+		return "/"
+	}
+	return s.Config.General.BaseURL
 }
 
 // Middleware provides an http.Handler hook wrapped around all requests.
@@ -88,6 +92,8 @@ func (s *Service) Middleware(h http.Handler) http.Handler {
 
 // Endpoints is a listing of all endpoints available in the Service.
 func (s *Service) Endpoints() map[string]map[string]http.HandlerFunc {
+	authenticator := lib.NewAuthenticator(s.Config.General.JWTKey, s.Config.General.JWTSigningMethod)
+
 	return map[string]map[string]http.HandlerFunc{
 		"/metrics": {
 			"GET": func(w http.ResponseWriter, r *http.Request) {
@@ -95,39 +101,19 @@ func (s *Service) Endpoints() map[string]map[string]http.HandlerFunc {
 			},
 		},
 		"/init": {
-			"POST": prometheus.InstrumentHandlerFunc("/init", s.authenticateHandlerFunc(s.Init)),
+			"POST": prometheus.InstrumentHandlerFunc("/init", authenticator.JWTHandlerFunc(s.Init)),
 		},
 		"/examine/{path:.*}": {
-			"GET": prometheus.InstrumentHandlerFunc("/examine", s.authenticateHandlerFunc(s.ExamineObject)),
+			"GET": prometheus.InstrumentHandlerFunc("/examine", authenticator.JWTHandlerFunc(s.ExamineObject)),
 		},
-		"/listtree/{path:.*}": {
-			"GET": prometheus.InstrumentHandlerFunc("/listtree", s.authenticateHandlerFunc(s.ListTree)),
+		"/list/{path:.*}": {
+			"GET": prometheus.InstrumentHandlerFunc("/list", authenticator.JWTHandlerFunc(s.ListTree)),
 		},
 		"/move/{path:.*}": {
-			"POST": prometheus.InstrumentHandlerFunc("/listtree", s.authenticateHandlerFunc(s.MoveObject)),
+			"POST": prometheus.InstrumentHandlerFunc("/move", authenticator.JWTHandlerFunc(s.MoveObject)),
 		},
 		"/delete/{path:.*}": {
-			"DELETE": prometheus.InstrumentHandlerFunc("/listtree", s.authenticateHandlerFunc(s.DeleteObject)),
+			"DELETE": prometheus.InstrumentHandlerFunc("/delete", authenticator.JWTHandlerFunc(s.DeleteObject)),
 		},
-	}
-}
-
-func (s *Service) getTokenFromRequest(r *http.Request) string {
-	if t := r.Header.Get("token"); t != "" {
-		return t
-	}
-	return r.URL.Query().Get("token")
-}
-
-func (s *Service) authenticateHandlerFunc(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		token := s.getTokenFromRequest(r)
-		user, _, err := s.SDK.Auth.Verify(token)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-		context.Set(r, keys.UserKey, user)
-		handler(w, r)
 	}
 }

@@ -5,14 +5,14 @@ import (
 	"net/http/httptest"
 
 	"github.com/clawio/codes"
-	"github.com/clawio/entities/mocks"
+	"github.com/clawio/entities"
 	"github.com/stretchr/testify/require"
 )
 
 func (suite *TestSuite) TestExamine() {
-	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
-	suite.MockMetaDataController.On("ExamineObject").Once().Return(&mocks.MockObjectInfo{}, nil)
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/examine/myblob", nil)
+	suite.MockMetaDataController.On("ExamineObject").Once().Return(&entities.ObjectInfo{}, nil)
+	r, err := http.NewRequest("GET", examineURL+"myblob", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
@@ -20,9 +20,9 @@ func (suite *TestSuite) TestExamine() {
 }
 
 func (suite *TestSuite) TestExamine_withObjectNotFound() {
-	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
-	suite.MockMetaDataController.On("ExamineObject").Once().Return(&mocks.MockObjectInfo{}, codes.NewErr(codes.NotFound, ""))
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/examine/myblob", nil)
+	suite.MockMetaDataController.On("ExamineObject").Once().Return(&entities.ObjectInfo{}, codes.NewErr(codes.NotFound, ""))
+	r, err := http.NewRequest("GET", examineURL+"myblob", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
@@ -30,9 +30,9 @@ func (suite *TestSuite) TestExamine_withObjectNotFound() {
 }
 
 func (suite *TestSuite) TestExamine_withError() {
-	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
-	suite.MockMetaDataController.On("ExamineObject").Once().Return(&mocks.MockObjectInfo{}, codes.NewErr(99, ""))
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/examine/myblob", nil)
+	suite.MockMetaDataController.On("ExamineObject").Once().Return(&entities.ObjectInfo{}, codes.NewErr(99, ""))
+	r, err := http.NewRequest("GET", examineURL+"myblob", nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)

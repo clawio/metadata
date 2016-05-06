@@ -11,7 +11,8 @@ import (
 func (suite *TestSuite) TestInit() {
 	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
 	suite.MockMetaDataController.On("Init").Once().Return(nil)
-	r, err := http.NewRequest("POST", "/clawio/v1/metadata/init", nil)
+	r, err := http.NewRequest("POST", initURL, nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
@@ -21,7 +22,8 @@ func (suite *TestSuite) TestInit() {
 func (suite *TestSuite) TestInit_withError() {
 	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, nil)
 	suite.MockMetaDataController.On("Init").Once().Return(codes.NewErr(99, ""))
-	r, err := http.NewRequest("POST", "/clawio/v1/metadata/init", nil)
+	r, err := http.NewRequest("POST", initURL, nil)
+	setToken(r)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)

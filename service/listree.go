@@ -16,7 +16,7 @@ import (
 // ListTree retrieves the information about an object.
 func (s *Service) ListTree(w http.ResponseWriter, r *http.Request) {
 	path := mux.Vars(r)["path"]
-	user := context.Get(r, keys.UserKey).(entities.User)
+	user := context.Get(r, keys.UserKey).(*entities.User)
 	oinfos, err := s.MetaDataController.ListTree(user, path)
 	if err != nil {
 		s.handleListTreeError(err, w)

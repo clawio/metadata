@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"github.com/clawio/entities"
-	"github.com/clawio/entities/mocks"
 	"github.com/clawio/metadata/metadatacontroller"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-var user = &mocks.MockUser{Username: "test"}
+var user = &entities.User{Username: "test"}
 
 type TestSuite struct {
 	suite.Suite
@@ -34,9 +33,6 @@ func (suite *TestSuite) SetupTest() {
 	require.Nil(suite.T(), err)
 	suite.metadataController = metadataController
 	suite.controller = suite.metadataController.(*controller)
-
-	// configure user mock
-	user.On("GetUsername").Return("test")
 }
 func (suite *TestSuite) TeardownTest() {
 	os.RemoveAll("/tmp/t")
@@ -66,11 +62,11 @@ func (suite *TestSuite) TestExamineObject() {
 	require.Nil(suite.T(), err)
 	info, err := suite.metadataController.ExamineObject(user, "myblob")
 	require.Nil(suite.T(), err)
-	require.Equal(suite.T(), "myblob", info.GetPathSpec())
-	require.Equal(suite.T(), uint64(1), info.GetSize())
-	require.Equal(suite.T(), "", info.GetChecksum())
-	require.Equal(suite.T(), "", info.GetMimeType())
-	require.Equal(suite.T(), entities.ObjectTypeBLOB, info.GetType())
+	require.Equal(suite.T(), "myblob", info.PathSpec)
+	require.Equal(suite.T(), int64(1), info.Size)
+	require.Equal(suite.T(), "", info.Checksum)
+	require.Equal(suite.T(), "", info.MimeType)
+	require.Equal(suite.T(), entities.ObjectTypeBLOB, info.Type)
 }
 
 func (suite *TestSuite) TestExamineObject_withNotFound() {

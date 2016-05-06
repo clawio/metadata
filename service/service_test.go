@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"testing"
 
-	"errors"
 	"github.com/NYTimes/gizmo/config"
 	"github.com/NYTimes/gizmo/server"
-	"github.com/clawio/codes"
-	emocks "github.com/clawio/entities/mocks"
+	"github.com/clawio/authentication/lib"
+	"github.com/clawio/entities"
 	mock_metadatacontroller "github.com/clawio/metadata/metadatacontroller/mock"
 	"github.com/clawio/sdk"
 	"github.com/clawio/sdk/mocks"
@@ -18,7 +18,16 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var user = &emocks.MockUser{Username: "test"}
+var (
+	examineURL string
+	listURL    string
+	deleteURL  string
+	moveURL    string
+	initURL    string
+	metricsURL string
+	user       = &entities.User{Username: "test"}
+	jwtToken   string
+)
 
 type TestSuite struct {
 	suite.Suite
@@ -37,6 +46,8 @@ func (suite *TestSuite) SetupTest() {
 	cfg := &Config{
 		Server: &config.Server{},
 		General: &GeneralConfig{
+			JWTKey:                       "secret",
+			JWTSigningMethod:             "HS256",
 			AuthenticationServiceBaseURL: "http://localhost:58001/clawio/v1/auth/",
 		},
 		MetaDataController: &MetaDataControllerConfig{
@@ -66,8 +77,19 @@ func (suite *TestSuite) SetupTest() {
 	err := os.MkdirAll("/tmp/t/test", 0755)
 	require.Nil(suite.T(), err)
 
-	// configure user mock
-	user.On("GetUsername").Return("test")
+	// Create the token
+	authenticator := lib.NewAuthenticator(cfg.General.JWTKey, cfg.General.JWTSigningMethod)
+	token, err := authenticator.CreateToken(user)
+	require.Nil(suite.T(), err)
+	jwtToken = token
+
+	// set testing urls
+	examineURL = path.Join(svc.Config.General.BaseURL, "/examine") + "/"
+	listURL = path.Join(svc.Config.General.BaseURL, "/list") + "/"
+	deleteURL = path.Join(svc.Config.General.BaseURL, "/delete") + "/"
+	moveURL = path.Join(svc.Config.General.BaseURL, "/move") + "/"
+	initURL = path.Join(svc.Config.General.BaseURL, "/init")
+	metricsURL = path.Join(svc.Config.General.BaseURL, "/metrics")
 }
 
 func (suite *TestSuite) TeardownTest() {
@@ -78,7 +100,7 @@ func (suite *TestSuite) TestNew() {
 	cfg := &Config{
 		Server: &config.Server{},
 		General: &GeneralConfig{
-			AuthenticationServiceBaseURL: "http://localhost:58001/clawio/v1/auth/",
+			AuthenticationServiceBaseURL: "http://localhost:58001/api/auth/",
 		},
 		MetaDataController: &MetaDataControllerConfig{
 			Type:              "simple",
@@ -114,50 +136,22 @@ func (suite *TestSuite) TestNew_withNilGeneralConfig() {
 	require.NotNil(suite.T(), err)
 }
 func (suite *TestSuite) TestPrefix() {
-	require.Equal(suite.T(), "/clawio/v1/metadata", suite.Service.Prefix())
+	suite.Service.Config.General.BaseURL = "/api/metadata"
+	require.Equal(suite.T(), suite.Service.Config.General.BaseURL, suite.Service.Prefix())
+}
+func (suite *TestSuite) TestPrefix_withEmpty() {
+	suite.Service.Config.General.BaseURL = ""
+	require.Equal(suite.T(), "/", suite.Service.Prefix())
 }
 
 func (suite *TestSuite) TestMetrics() {
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/metrics", nil)
+	r, err := http.NewRequest("GET", metricsURL, nil)
 	require.Nil(suite.T(), err)
 	w := httptest.NewRecorder()
 	suite.Server.ServeHTTP(w, r)
 	require.Equal(suite.T(), 200, w.Code)
 }
+func setToken(r *http.Request) {
+	r.Header.Set("Authorization", "bearer "+jwtToken)
 
-func (suite *TestSuite) TestgetTokenFromRequest_header() {
-	r, err := http.NewRequest("GET", "/", nil)
-	require.Nil(suite.T(), err)
-	r.Header.Set("token", "mytoken")
-	token := suite.Service.getTokenFromRequest(r)
-	require.Equal(suite.T(), "mytoken", token)
-
-}
-func (suite *TestSuite) TestgetTokenFromRequest_query() {
-	r, err := http.NewRequest("GET", "/", nil)
-	require.Nil(suite.T(), err)
-	values := r.URL.Query()
-	values.Set("token", "mytoken")
-	r.URL.RawQuery = values.Encode()
-	token := suite.Service.getTokenFromRequest(r)
-	require.Equal(suite.T(), "mytoken", token)
-}
-func (suite *TestSuite) TestAuthenticateHandlerFunc() {
-	suite.MockMetaDataController.On("ExamineObject").Once().Return(&emocks.MockObjectInfo{}, nil)
-	suite.MockAuthService.On("Verify", "mytoken").Once().Return(user, &codes.Response{}, nil)
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/examine/myblob", nil)
-	r.Header.Set("token", "mytoken")
-	require.Nil(suite.T(), err)
-	w := httptest.NewRecorder()
-	suite.Server.ServeHTTP(w, r)
-	require.True(suite.T(), 200 <= w.Code && w.Code <= 299)
-}
-
-func (suite *TestSuite) TestAuthenticateHandlerFunc_withBadToken() {
-	suite.MockAuthService.On("Verify", "").Once().Return(user, &codes.Response{}, errors.New("test error"))
-	r, err := http.NewRequest("GET", "/clawio/v1/metadata/examine/myblob", nil)
-	require.Nil(suite.T(), err)
-	w := httptest.NewRecorder()
-	suite.Server.ServeHTTP(w, r)
-	require.Equal(suite.T(), 401, w.Code)
 }
