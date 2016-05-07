@@ -9,7 +9,9 @@
 		"HealthCheckPath": "/health.txt"
 	},
 	"General": {
-		"AuthenticationServiceBaseURL": "http://localhost:58001/clawio/v1/auth/"
+		"JWTKey": "secret",
+		"JWTSigningMethod": "HS256",
+		"AuthenticationServiceBaseURL": "http://localhost:58001/api/auth/"
 	}, 
 	"MetaDataController": {
 		"Type": "simple",
